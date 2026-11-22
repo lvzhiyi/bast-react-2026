@@ -6,5 +6,9 @@ export {
 } from './AdminShell';
 export { MetricCard, type MetricCardProps } from './MetricCard';
 export { PageContainer, type PageContainerProps } from './PageContainer';
-export { PortalProvider, type PortalProviderProps } from './PortalProvider';
+export {
+  PortalProvider,
+  createPortalQueryClient,
+  type PortalProviderProps,
+} from './PortalProvider';
 export { StatusBadge, type StatusBadgeProps } from './StatusBadge';

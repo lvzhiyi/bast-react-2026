@@ -9,6 +9,7 @@ import {
 } from '@repo/api';
 import { PageContainer, StatusBadge } from '@repo/ui';
 import { formatCurrency } from '@repo/utils';
+import { getRouteApi } from '@tanstack/react-router';
 import {
   App,
   Button,
@@ -22,7 +23,9 @@ import {
   Table,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+const ordersRouteApi = getRouteApi('/orders');
 
 const STATUS_MAP: Record<OrderStatus, { color: string; text: string }> = {
   PENDING: { color: 'orange', text: '待支付' },
@@ -38,18 +41,25 @@ interface MerchantOrderFormValues {
 
 export function MerchantOrderPage() {
   const { message } = App.useApp();
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [keyword, setKeyword] = useState('');
-  const [statusFilter, setStatusFilter] = useState<OrderStatus | undefined>();
+  const search = ordersRouteApi.useSearch();
+  const navigate = ordersRouteApi.useNavigate();
+
+  const page = search.page ?? 1;
+  const pageSize = search.pageSize ?? 10;
+  const [keywordInput, setKeywordInput] = useState(search.keyword ?? '');
+
+  useEffect(() => {
+    setKeywordInput(search.keyword ?? '');
+  }, [search.keyword]);
+
   const [createOpen, setCreateOpen] = useState(false);
   const [form] = Form.useForm<MerchantOrderFormValues>();
 
   const { data, isLoading } = useOrders({
     page,
     pageSize,
-    keyword,
-    status: statusFilter,
+    keyword: search.keyword,
+    status: search.status,
     tenantId: CURRENT_TENANT_ID,
   });
 
@@ -157,20 +167,34 @@ export function MerchantOrderPage() {
           placeholder="搜索订单号或客户名称..."
           allowClear
           style={{ width: 260 }}
+          value={keywordInput}
+          onChange={(e) => {
+            const val = e.target.value;
+            setKeywordInput(val);
+            if (val === '' && search.keyword !== undefined) {
+              navigate({
+                search: (prev) => ({ ...prev, page: undefined, keyword: undefined }),
+              });
+            }
+          }}
           onSearch={(val) => {
-            setPage(1);
-            setKeyword(val);
+            const normalized = val.trim() || undefined;
+            setKeywordInput(normalized ?? '');
+            navigate({
+              search: (prev) => ({ ...prev, page: undefined, keyword: normalized }),
+            });
           }}
         />
         <Select
           allowClear
           placeholder="按状态筛选"
           style={{ width: 150 }}
-          value={statusFilter}
-          onChange={(val) => {
-            setPage(1);
-            setStatusFilter(val);
-          }}
+          value={search.status}
+          onChange={(val) =>
+            navigate({
+              search: (prev) => ({ ...prev, page: undefined, status: val }),
+            })
+          }
           options={[
             { label: '待支付', value: 'PENDING' },
             { label: '已支付', value: 'PAID' },
@@ -191,8 +215,13 @@ export function MerchantOrderPage() {
           showSizeChanger: true,
           showTotal: (total) => `共 ${total} 条本店订单`,
           onChange: (p, ps) => {
-            setPage(p);
-            setPageSize(ps);
+            navigate({
+              search: (prev) => ({
+                ...prev,
+                page: p > 1 && ps === pageSize ? p : undefined,
+                pageSize: ps !== 10 ? ps : undefined,
+              }),
+            });
           },
         }}
       />

@@ -8,9 +8,11 @@ import {
 } from '@repo/api';
 import { PageContainer, StatusBadge } from '@repo/ui';
 import { formatCurrency, formatPercent } from '@repo/utils';
+import { getRouteApi } from '@tanstack/react-router';
 import { App, Button, Select, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useState } from 'react';
+
+const settlementsRouteApi = getRouteApi('/settlements');
 
 const SETTLEMENT_STATUS_MAP: Record<SettlementStatus, { color: string; text: string }> = {
   PENDING: { color: 'orange', text: '打款审核中' },
@@ -19,11 +21,12 @@ const SETTLEMENT_STATUS_MAP: Record<SettlementStatus, { color: string; text: str
 
 export function SettlementListPage() {
   const { message } = App.useApp();
-  const [statusFilter, setStatusFilter] = useState<SettlementStatus | undefined>();
+  const search = settlementsRouteApi.useSearch();
+  const navigate = settlementsRouteApi.useNavigate();
 
   const { data: settlements = [], isLoading } = useSettlements({
     partnerId: CURRENT_PARTNER_ID,
-    status: statusFilter,
+    status: search.status,
   });
 
   const createMutation = useCreateSettlement();
@@ -97,8 +100,12 @@ export function SettlementListPage() {
           allowClear
           placeholder="按结算状态筛选"
           style={{ width: 160 }}
-          value={statusFilter}
-          onChange={(val) => setStatusFilter(val)}
+          value={search.status}
+          onChange={(val) =>
+            navigate({
+              search: (prev) => ({ ...prev, status: val }),
+            })
+          }
           options={[
             { label: '打款审核中', value: 'PENDING' },
             { label: '已打款', value: 'PAID' },

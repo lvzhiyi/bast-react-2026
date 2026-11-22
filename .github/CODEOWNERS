@@ -1,0 +1,28 @@
+# Monorepo CODEOWNERS
+# Replace @lvzhiyi with your GitHub teams/handles (e.g. @org/platform-team).
+# Note: For GitLab, move or copy this file to .gitlab/CODEOWNERS (or repo root CODEOWNERS).
+
+# Default fallback owner for anything not matched below
+* @lvzhiyi
+
+# Root monorepo configs, dependency catalog, and CI/CD pipelines
+/package.json @lvzhiyi
+/pnpm-workspace.yaml @lvzhiyi
+/pnpm-lock.yaml @lvzhiyi
+/turbo.json @lvzhiyi
+/biome.json @lvzhiyi
+/scripts/ @lvzhiyi
+/.github/ @lvzhiyi
+/.gitlab-ci.yml @lvzhiyi
+
+# Shared internal packages (affect multiple apps — require architecture/core review)
+/packages/ @lvzhiyi
+/packages/ui/ @lvzhiyi
+/packages/api/ @lvzhiyi
+/packages/utils/ @lvzhiyi
+/packages/tsconfig/ @lvzhiyi
+
+# Individual frontend applications (independent app owners)
+/apps/platform-admin/ @lvzhiyi
+/apps/merchant-portal/ @lvzhiyi
+/apps/partner-console/ @lvzhiyi

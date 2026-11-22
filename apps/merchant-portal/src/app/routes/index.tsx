@@ -1,60 +1,111 @@
+import { CURRENT_TENANT_ID } from '@/app/constants';
 import { MerchantLayout } from '@/app/layouts/MerchantLayout';
-import { Suspense, lazy } from 'react';
-import { Navigate, RouterProvider, createBrowserRouter } from 'react-router';
+import {
+  merchantOrderSearchSchema,
+  ordersQueryOptions,
+  productSearchSchema,
+  productsQueryOptions,
+} from '@repo/api';
+import { createPortalQueryClient } from '@repo/ui';
+import type { QueryClient } from '@tanstack/react-query';
+import {
+  RouterProvider,
+  createRootRouteWithContext,
+  createRoute,
+  createRouter,
+  lazyRouteComponent,
+  redirect,
+} from '@tanstack/react-router';
 
-const MerchantDashboardPage = lazy(() =>
-  import('@/features/dashboard/MerchantDashboardPage').then((m) => ({
-    default: m.MerchantDashboardPage,
-  })),
-);
+export const queryClient = createPortalQueryClient();
 
-const MerchantOrderPage = lazy(() =>
-  import('@/features/orders/MerchantOrderPage').then((m) => ({
-    default: m.MerchantOrderPage,
-  })),
-);
+const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  component: MerchantLayout,
+});
 
-const ProductListPage = lazy(() =>
-  import('@/features/products/ProductListPage').then((m) => ({
-    default: m.ProductListPage,
-  })),
-);
-
-const fallback = <div className="p-6 text-gray-500">页面加载中...</div>;
-
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <MerchantLayout />,
-    children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
-      {
-        path: 'dashboard',
-        element: (
-          <Suspense fallback={fallback}>
-            <MerchantDashboardPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'orders',
-        element: (
-          <Suspense fallback={fallback}>
-            <MerchantOrderPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'products',
-        element: (
-          <Suspense fallback={fallback}>
-            <ProductListPage />
-          </Suspense>
-        ),
-      },
-    ],
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  beforeLoad: () => {
+    throw redirect({ to: '/dashboard', replace: true });
   },
-]);
+});
+
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/dashboard',
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(
+        ordersQueryOptions({ page: 1, pageSize: 20, tenantId: CURRENT_TENANT_ID }),
+      ),
+      context.queryClient.ensureQueryData(productsQueryOptions({ tenantId: CURRENT_TENANT_ID })),
+    ]);
+  },
+  component: lazyRouteComponent(
+    () => import('@/features/dashboard/MerchantDashboardPage'),
+    'MerchantDashboardPage',
+  ),
+});
+
+const ordersRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/orders',
+  validateSearch: merchantOrderSearchSchema,
+  loaderDeps: ({ search }) => ({
+    page: search.page ?? 1,
+    pageSize: search.pageSize ?? 10,
+    keyword: search.keyword,
+    status: search.status,
+  }),
+  loader: ({ context, deps }) =>
+    context.queryClient.ensureQueryData(
+      ordersQueryOptions({ ...deps, tenantId: CURRENT_TENANT_ID }),
+    ),
+  component: lazyRouteComponent(
+    () => import('@/features/orders/MerchantOrderPage'),
+    'MerchantOrderPage',
+  ),
+});
+
+const productsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/products',
+  validateSearch: productSearchSchema,
+  loaderDeps: ({ search }) => ({
+    keyword: search.keyword,
+    status: search.status,
+  }),
+  loader: ({ context, deps }) =>
+    context.queryClient.ensureQueryData(
+      productsQueryOptions({ tenantId: CURRENT_TENANT_ID, ...deps }),
+    ),
+  component: lazyRouteComponent(
+    () => import('@/features/products/ProductListPage'),
+    'ProductListPage',
+  ),
+});
+
+const routeTree = rootRoute.addChildren([indexRoute, dashboardRoute, ordersRoute, productsRoute]);
+
+export const router = createRouter({
+  routeTree,
+  context: {
+    queryClient,
+  },
+  defaultPreload: 'intent',
+  defaultPreloadStaleTime: 0,
+  defaultPendingComponent: () => <div className="p-6 text-gray-500">页面加载中...</div>,
+  defaultNotFoundComponent: () => (
+    <div className="p-6 text-gray-500">页面不存在，请从左侧菜单选择功能模块。</div>
+  ),
+});
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
 
 export function AppRouter() {
   return <RouterProvider router={router} />;

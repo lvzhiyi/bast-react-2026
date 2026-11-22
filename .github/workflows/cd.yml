@@ -1,0 +1,208 @@
+name: CD
+
+on:
+  push:
+    branches:
+      - develop
+    tags:
+      - 'platform-admin@v*'
+      - 'merchant-portal@v*'
+      - 'partner-console@v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target deployment environment
+        required: true
+        type: choice
+        default: staging
+        options:
+          - staging
+          - production
+      target:
+        description: Target app(s) to deploy
+        required: true
+        type: choice
+        default: auto
+        options:
+          - auto
+          - all
+          - platform-admin
+          - merchant-portal
+          - partner-console
+      update_deploy_tag:
+        description: Update per-app deploy marker tag after deploy
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  detect:
+    name: Detect Affected Apps
+    runs-on: ubuntu-latest
+    outputs:
+      affected_apps: ${{ steps.affected.outputs.affected_apps }}
+      has_affected: ${{ steps.affected.outputs.has_affected }}
+      affected_count: ${{ steps.affected.outputs.affected_count }}
+      affected_dirs: ${{ steps.affected.outputs.affected_dirs }}
+      deploy_env: ${{ steps.meta.outputs.deploy_env }}
+      update_deploy_tag: ${{ steps.meta.outputs.update_deploy_tag }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve deployment strategy
+        id: meta
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ] && [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            TAG_NAME="${GITHUB_REF_NAME}"
+            APP_DIR="${TAG_NAME%%@v*}"
+            echo "deploy_env=production" >> "$GITHUB_OUTPUT"
+            echo "detect_mode=single" >> "$GITHUB_OUTPUT"
+            echo "target_app=${APP_DIR}" >> "$GITHUB_OUTPUT"
+            echo "update_deploy_tag=true" >> "$GITHUB_OUTPUT"
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "deploy_env=${{ inputs.environment }}" >> "$GITHUB_OUTPUT"
+            echo "update_deploy_tag=${{ inputs.update_deploy_tag }}" >> "$GITHUB_OUTPUT"
+            TARGET="${{ inputs.target }}"
+            if [ "$TARGET" = "auto" ]; then
+              echo "detect_mode=deploy-tags" >> "$GITHUB_OUTPUT"
+              echo "target_app=" >> "$GITHUB_OUTPUT"
+            elif [ "$TARGET" = "all" ]; then
+              echo "detect_mode=all" >> "$GITHUB_OUTPUT"
+              echo "target_app=" >> "$GITHUB_OUTPUT"
+            else
+              echo "detect_mode=single" >> "$GITHUB_OUTPUT"
+              echo "target_app=${TARGET}" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "deploy_env=staging" >> "$GITHUB_OUTPUT"
+            echo "detect_mode=deploy-tags" >> "$GITHUB_OUTPUT"
+            echo "target_app=" >> "$GITHUB_OUTPUT"
+            echo "update_deploy_tag=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Compute affected apps
+        id: affected
+        shell: bash
+        run: |
+          DEPLOY_ENV="${{ steps.meta.outputs.deploy_env }}"
+          DETECT_MODE="${{ steps.meta.outputs.detect_mode }}"
+          TARGET_APP="${{ steps.meta.outputs.target_app }}"
+
+          {
+            echo "### Deployment Plan (${DEPLOY_ENV})"
+            echo '```text'
+            if [ "$DETECT_MODE" = "single" ]; then
+              node scripts/affected-apps.mjs \
+                --app "$TARGET_APP" \
+                --all \
+                --github-output "$GITHUB_OUTPUT" \
+                --format pretty
+            elif [ "$DETECT_MODE" = "all" ]; then
+              node scripts/affected-apps.mjs \
+                --all \
+                --github-output "$GITHUB_OUTPUT" \
+                --format pretty
+            else
+              node scripts/affected-apps.mjs \
+                --mode deploy-tags \
+                --tag-prefix "deploy/${DEPLOY_ENV}/" \
+                --github-output "$GITHUB_OUTPUT" \
+                --format pretty
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Deploy ${{ matrix.app.dir }} (${{ needs.detect.outputs.deploy_env }})
+    needs: detect
+    if: needs.detect.outputs.has_affected == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ needs.detect.outputs.deploy_env }}
+    strategy:
+      fail-fast: false
+      matrix:
+        app: ${{ fromJson(needs.detect.outputs.affected_apps) }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Restore Turborepo local cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}-${{ matrix.app.dir }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-${{ github.sha }}-
+            ${{ runner.os }}-turbo-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build ${{ matrix.app.name }}
+        run: pnpm exec turbo run build --filter="${{ matrix.app.name }}..."
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app.dir }}-${{ needs.detect.outputs.deploy_env }}
+          path: ${{ matrix.app.distDir }}
+          if-no-files-found: error
+
+      - name: Deploy ${{ matrix.app.dir }} to ${{ needs.detect.outputs.deploy_env }}
+        shell: bash
+        run: |
+          echo "Ready to deploy ${{ matrix.app.name }} from ${{ matrix.app.distDir }} to ${{ needs.detect.outputs.deploy_env }}"
+          # Replace with your actual deployment step, e.g.:
+          # - S3 / OSS: aws s3 sync "${{ matrix.app.distDir }}" "s3://my-bucket/${{ needs.detect.outputs.deploy_env }}/${{ matrix.app.dir }}" --delete
+          # - SSH/Rsync: rsync -avz --delete "${{ matrix.app.distDir }}/" "deploy@host:/var/www/${{ matrix.app.dir }}/"
+          # - Docker/K8s: docker build --build-arg APP_DIR="${{ matrix.app.dir }}" ...
+
+      - name: Update deploy marker tag
+        if: needs.detect.outputs.update_deploy_tag == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          TAG_NAME="deploy/${{ needs.detect.outputs.deploy_env }}/${{ matrix.app.dir }}"
+          git tag -f "$TAG_NAME" "${{ github.sha }}"
+          # Pushing under refs/tags/deploy/* never matches the *@v* trigger above.
+          git push -f origin "refs/tags/${TAG_NAME}"

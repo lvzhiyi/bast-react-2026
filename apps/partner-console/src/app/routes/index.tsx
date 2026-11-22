@@ -1,60 +1,113 @@
+import { CURRENT_PARTNER_ID } from '@/app/constants';
 import { PartnerLayout } from '@/app/layouts/PartnerLayout';
-import { Suspense, lazy } from 'react';
-import { Navigate, RouterProvider, createBrowserRouter } from 'react-router';
+import {
+  settlementSearchSchema,
+  settlementsQueryOptions,
+  tenantSearchSchema,
+  tenantsQueryOptions,
+} from '@repo/api';
+import { createPortalQueryClient } from '@repo/ui';
+import type { QueryClient } from '@tanstack/react-query';
+import {
+  RouterProvider,
+  createRootRouteWithContext,
+  createRoute,
+  createRouter,
+  lazyRouteComponent,
+  redirect,
+} from '@tanstack/react-router';
 
-const PartnerDashboardPage = lazy(() =>
-  import('@/features/dashboard/PartnerDashboardPage').then((m) => ({
-    default: m.PartnerDashboardPage,
-  })),
-);
+export const queryClient = createPortalQueryClient();
 
-const ReferralTenantPage = lazy(() =>
-  import('@/features/referrals/ReferralTenantPage').then((m) => ({
-    default: m.ReferralTenantPage,
-  })),
-);
+const rootRoute = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  component: PartnerLayout,
+});
 
-const SettlementListPage = lazy(() =>
-  import('@/features/settlements/SettlementListPage').then((m) => ({
-    default: m.SettlementListPage,
-  })),
-);
-
-const fallback = <div className="p-6 text-gray-500">页面加载中...</div>;
-
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <PartnerLayout />,
-    children: [
-      { index: true, element: <Navigate to="/dashboard" replace /> },
-      {
-        path: 'dashboard',
-        element: (
-          <Suspense fallback={fallback}>
-            <PartnerDashboardPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'referrals',
-        element: (
-          <Suspense fallback={fallback}>
-            <ReferralTenantPage />
-          </Suspense>
-        ),
-      },
-      {
-        path: 'settlements',
-        element: (
-          <Suspense fallback={fallback}>
-            <SettlementListPage />
-          </Suspense>
-        ),
-      },
-    ],
+const indexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/',
+  beforeLoad: () => {
+    throw redirect({ to: '/dashboard', replace: true });
   },
+});
+
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/dashboard',
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(tenantsQueryOptions({ partnerId: CURRENT_PARTNER_ID })),
+      context.queryClient.ensureQueryData(
+        settlementsQueryOptions({ partnerId: CURRENT_PARTNER_ID }),
+      ),
+    ]);
+  },
+  component: lazyRouteComponent(
+    () => import('@/features/dashboard/PartnerDashboardPage'),
+    'PartnerDashboardPage',
+  ),
+});
+
+const referralsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/referrals',
+  validateSearch: tenantSearchSchema,
+  loaderDeps: ({ search }) => ({
+    keyword: search.keyword,
+    status: search.status,
+  }),
+  loader: ({ context, deps }) =>
+    context.queryClient.ensureQueryData(
+      tenantsQueryOptions({ partnerId: CURRENT_PARTNER_ID, ...deps }),
+    ),
+  component: lazyRouteComponent(
+    () => import('@/features/referrals/ReferralTenantPage'),
+    'ReferralTenantPage',
+  ),
+});
+
+const settlementsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settlements',
+  validateSearch: settlementSearchSchema,
+  loaderDeps: ({ search }) => ({
+    status: search.status,
+  }),
+  loader: ({ context, deps }) =>
+    context.queryClient.ensureQueryData(
+      settlementsQueryOptions({ partnerId: CURRENT_PARTNER_ID, ...deps }),
+    ),
+  component: lazyRouteComponent(
+    () => import('@/features/settlements/SettlementListPage'),
+    'SettlementListPage',
+  ),
+});
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  dashboardRoute,
+  referralsRoute,
+  settlementsRoute,
 ]);
+
+export const router = createRouter({
+  routeTree,
+  context: {
+    queryClient,
+  },
+  defaultPreload: 'intent',
+  defaultPreloadStaleTime: 0,
+  defaultPendingComponent: () => <div className="p-6 text-gray-500">页面加载中...</div>,
+  defaultNotFoundComponent: () => (
+    <div className="p-6 text-gray-500">页面不存在，请从左侧菜单选择功能模块。</div>
+  ),
+});
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router;
+  }
+}
 
 export function AppRouter() {
   return <RouterProvider router={router} />;

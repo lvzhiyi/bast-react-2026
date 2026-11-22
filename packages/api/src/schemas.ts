@@ -127,3 +127,32 @@ export interface CreateSettlementPayload {
   partnerId: string;
   period?: string;
 }
+
+export const tenantSearchSchema = z.object({
+  keyword: z.string().optional().catch(undefined),
+  status: tenantStatusSchema.optional().catch(undefined),
+});
+export type TenantSearch = z.infer<typeof tenantSearchSchema>;
+
+export const orderSearchSchema = z.object({
+  page: z.number().int().min(1).optional().catch(undefined),
+  pageSize: z.number().int().min(1).max(100).optional().catch(undefined),
+  keyword: z.string().optional().catch(undefined),
+  status: orderStatusSchema.optional().catch(undefined),
+  tenantId: z.string().optional().catch(undefined),
+});
+export type OrderSearch = z.infer<typeof orderSearchSchema>;
+
+export const merchantOrderSearchSchema = orderSearchSchema.omit({ tenantId: true });
+export type MerchantOrderSearch = z.infer<typeof merchantOrderSearchSchema>;
+
+export const productSearchSchema = z.object({
+  keyword: z.string().optional().catch(undefined),
+  status: productStatusSchema.optional().catch(undefined),
+});
+export type ProductSearch = z.infer<typeof productSearchSchema>;
+
+export const settlementSearchSchema = z.object({
+  status: settlementStatusSchema.optional().catch(undefined),
+});
+export type SettlementSearch = z.infer<typeof settlementSearchSchema>;

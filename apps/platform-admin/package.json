@@ -15,10 +15,11 @@
     "@repo/ui": "workspace:*",
     "@repo/utils": "workspace:*",
     "@tanstack/react-query": "catalog:",
+    "@tanstack/react-router": "catalog:",
     "antd": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "react-router": "catalog:"
+    "zustand": "catalog:"
   },
   "devDependencies": {
     "@repo/tsconfig": "workspace:*",

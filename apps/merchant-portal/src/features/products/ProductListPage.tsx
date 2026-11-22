@@ -10,10 +10,13 @@ import {
 } from '@repo/api';
 import { PageContainer, StatusBadge } from '@repo/ui';
 import { formatCurrency } from '@repo/utils';
+import { getRouteApi } from '@tanstack/react-router';
 import { App, Button, Input, Select, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ProductFormModal } from './ProductFormModal';
+
+const productsRouteApi = getRouteApi('/products');
 
 const PRODUCT_STATUS_MAP: Record<ProductStatus, { color: string; text: string }> = {
   ON_SALE: { color: 'green', text: '在售中' },
@@ -22,14 +25,20 @@ const PRODUCT_STATUS_MAP: Record<ProductStatus, { color: string; text: string }>
 
 export function ProductListPage() {
   const { message } = App.useApp();
-  const [keyword, setKeyword] = useState('');
-  const [statusFilter, setStatusFilter] = useState<ProductStatus | undefined>();
+  const search = productsRouteApi.useSearch();
+  const navigate = productsRouteApi.useNavigate();
+  const [keywordInput, setKeywordInput] = useState(search.keyword ?? '');
+
+  useEffect(() => {
+    setKeywordInput(search.keyword ?? '');
+  }, [search.keyword]);
+
   const [modalOpen, setModalOpen] = useState(false);
 
   const { data: products = [], isLoading } = useProducts({
     tenantId: CURRENT_TENANT_ID,
-    keyword,
-    status: statusFilter,
+    keyword: search.keyword,
+    status: search.status,
   });
 
   const createMutation = useCreateProduct();
@@ -110,14 +119,34 @@ export function ProductListPage() {
           placeholder="搜索商品名称或 SKU..."
           allowClear
           style={{ width: 260 }}
-          onSearch={(val) => setKeyword(val)}
+          value={keywordInput}
+          onChange={(e) => {
+            const val = e.target.value;
+            setKeywordInput(val);
+            if (val === '' && search.keyword !== undefined) {
+              navigate({
+                search: (prev) => ({ ...prev, keyword: undefined }),
+              });
+            }
+          }}
+          onSearch={(val) => {
+            const normalized = val.trim() || undefined;
+            setKeywordInput(normalized ?? '');
+            navigate({
+              search: (prev) => ({ ...prev, keyword: normalized }),
+            });
+          }}
         />
         <Select
           allowClear
           placeholder="按状态筛选"
           style={{ width: 140 }}
-          value={statusFilter}
-          onChange={(val) => setStatusFilter(val)}
+          value={search.status}
+          onChange={(val) =>
+            navigate({
+              search: (prev) => ({ ...prev, status: val }),
+            })
+          }
           options={[
             { label: '在售中', value: 'ON_SALE' },
             { label: '已下架', value: 'OFF_SHELF' },

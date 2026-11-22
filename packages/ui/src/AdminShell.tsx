@@ -27,6 +27,10 @@ export interface AdminShellProps {
   selectedKey: string;
   onMenuSelect: (key: string) => void;
   portalLinks?: PortalLinkItem[];
+  collapsed?: boolean;
+  defaultCollapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
+  headerActions?: ReactNode;
   children: ReactNode;
 }
 
@@ -40,19 +44,33 @@ export function AdminShell({
   selectedKey,
   onMenuSelect,
   portalLinks = SAAS_PORTALS,
+  collapsed,
+  defaultCollapsed = false,
+  onCollapsedChange,
+  headerActions,
   children,
 }: AdminShellProps) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [uncontrolledCollapsed, setUncontrolledCollapsed] = useState(defaultCollapsed);
+  const isControlled = collapsed !== undefined;
+  const actualCollapsed = isControlled ? collapsed : uncontrolledCollapsed;
+
+  const handleToggleCollapsed = () => {
+    const next = !actualCollapsed;
+    if (!isControlled) {
+      setUncontrolledCollapsed(next);
+    }
+    onCollapsedChange?.(next);
+  };
 
   return (
     <Layout className="min-h-screen">
-      <Sider trigger={null} collapsible collapsed={collapsed} width={220}>
+      <Sider trigger={null} collapsible collapsed={actualCollapsed} width={220}>
         <div className="h-16 flex items-center justify-center px-3 text-white font-bold text-base tracking-wide border-b border-white/10">
           <span
             className="inline-block w-2.5 h-2.5 rounded-full mr-2 shrink-0"
             style={{ backgroundColor: accentColor }}
           />
-          <span className="truncate">{collapsed ? brandShortName : brandName}</span>
+          <span className="truncate">{actualCollapsed ? brandShortName : brandName}</span>
         </div>
         <Menu
           theme="dark"
@@ -70,8 +88,8 @@ export function AdminShell({
           <div className="flex items-center gap-3">
             <Button
               type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed((prev) => !prev)}
+              icon={actualCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              onClick={handleToggleCollapsed}
               className="text-base"
             />
             {portalLinks.length > 0 && (
@@ -97,6 +115,7 @@ export function AdminShell({
             )}
           </div>
           <div className="flex items-center gap-2">
+            {headerActions}
             <Tag color={accentColor} className="m-0">
               {roleBadge}
             </Tag>

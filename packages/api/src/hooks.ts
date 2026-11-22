@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { orderKeys, productKeys, settlementKeys, tenantKeys } from './keys';
 import {
   mockOrderService,
@@ -18,11 +18,15 @@ import type {
   UpdateTenantStatusPayload,
 } from './schemas';
 
-export function useTenants(params: TenantQueryParams = {}) {
-  return useQuery({
+export function tenantsQueryOptions(params: TenantQueryParams = {}) {
+  return queryOptions({
     queryKey: tenantKeys.list(params),
     queryFn: () => mockTenantService.getList(params),
   });
+}
+
+export function useTenants(params: TenantQueryParams = {}) {
+  return useQuery(tenantsQueryOptions(params));
 }
 
 export function useUpdateTenantStatus() {
@@ -35,11 +39,15 @@ export function useUpdateTenantStatus() {
   });
 }
 
-export function useOrders(params: OrderQueryParams) {
-  return useQuery({
+export function ordersQueryOptions(params: OrderQueryParams) {
+  return queryOptions({
     queryKey: orderKeys.list(params),
     queryFn: () => mockOrderService.getList(params),
   });
+}
+
+export function useOrders(params: OrderQueryParams) {
+  return useQuery(ordersQueryOptions(params));
 }
 
 export function useCreateOrder() {
@@ -72,11 +80,15 @@ export function useDeleteOrder() {
   });
 }
 
-export function useProducts(params: ProductQueryParams) {
-  return useQuery({
+export function productsQueryOptions(params: ProductQueryParams) {
+  return queryOptions({
     queryKey: productKeys.list(params),
     queryFn: () => mockProductService.getList(params),
   });
+}
+
+export function useProducts(params: ProductQueryParams) {
+  return useQuery(productsQueryOptions(params));
 }
 
 export function useCreateProduct() {
@@ -99,11 +111,15 @@ export function useToggleProductStatus() {
   });
 }
 
-export function useSettlements(params: SettlementQueryParams) {
-  return useQuery({
+export function settlementsQueryOptions(params: SettlementQueryParams) {
+  return queryOptions({
     queryKey: settlementKeys.list(params),
     queryFn: () => mockSettlementService.getList(params),
   });
+}
+
+export function useSettlements(params: SettlementQueryParams) {
+  return useQuery(settlementsQueryOptions(params));
 }
 
 export function useCreateSettlement() {

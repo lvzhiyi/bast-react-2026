@@ -13,7 +13,12 @@
     "build:partner": "turbo run build --filter=@repo/partner-console...",
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "affected": "node scripts/affected-apps.mjs",
+    "affected:json": "node scripts/affected-apps.mjs --format json",
+    "affected:deploy": "node scripts/affected-apps.mjs --mode deploy-tags",
+    "build:affected": "turbo run build --affected",
+    "check:affected": "turbo run typecheck lint --affected"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",

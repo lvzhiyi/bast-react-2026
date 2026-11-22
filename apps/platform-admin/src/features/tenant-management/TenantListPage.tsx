@@ -7,9 +7,12 @@ import {
 } from '@repo/api';
 import { PageContainer, StatusBadge } from '@repo/ui';
 import { formatCurrency, formatPercent } from '@repo/utils';
+import { getRouteApi } from '@tanstack/react-router';
 import { App, Button, Input, Select, Space, Table, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+const tenantsRouteApi = getRouteApi('/tenants');
 
 const STATUS_MAP: Record<TenantStatus, { color: string; text: string }> = {
   ACTIVE: { color: 'green', text: '运营中' },
@@ -25,10 +28,19 @@ const PLAN_MAP: Record<TenantPlan, { color: string; text: string }> = {
 
 export function TenantListPage() {
   const { message } = App.useApp();
-  const [keyword, setKeyword] = useState('');
-  const [statusFilter, setStatusFilter] = useState<TenantStatus | undefined>();
+  const search = tenantsRouteApi.useSearch();
+	console.log('search', search);
+  const navigate = tenantsRouteApi.useNavigate();
+  const [keywordInput, setKeywordInput] = useState(search.keyword ?? '');
 
-  const { data: tenants = [], isLoading } = useTenants({ keyword, status: statusFilter });
+  useEffect(() => {
+    setKeywordInput(search.keyword ?? '');
+  }, [search.keyword]);
+
+  const { data: tenants = [], isLoading } = useTenants({
+    keyword: search.keyword,
+    status: search.status,
+  });
   const updateStatusMutation = useUpdateTenantStatus();
 
   const handleStatusChange = async (record: TenantItem, nextStatus: TenantStatus, tip: string) => {
@@ -131,14 +143,34 @@ export function TenantListPage() {
           placeholder="搜索租户名称或渠道商..."
           allowClear
           style={{ width: 260 }}
-          onSearch={(val) => setKeyword(val)}
+          value={keywordInput}
+          onChange={(e) => {
+            const val = e.target.value;
+            setKeywordInput(val);
+            if (val === '' && search.keyword !== undefined) {
+              navigate({
+                search: (prev) => ({ ...prev, keyword: undefined }),
+              });
+            }
+          }}
+          onSearch={(val) => {
+            const normalized = val.trim() || undefined;
+            setKeywordInput(normalized ?? '');
+            navigate({
+              search: (prev) => ({ ...prev, keyword: normalized }),
+            });
+          }}
         />
         <Select
           allowClear
           placeholder="按状态筛选"
           style={{ width: 150 }}
-          value={statusFilter}
-          onChange={(val) => setStatusFilter(val)}
+          value={search.status}
+          onChange={(val) =>
+            navigate({
+              search: (prev) => ({ ...prev, status: val }),
+            })
+          }
           options={[
             { label: '运营中', value: 'ACTIVE' },
             { label: '待审核', value: 'PENDING_REVIEW' },

@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - develop
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  verify:
+    name: Affected Typecheck, Lint & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Full history is required so Turborepo can diff against the base commit accurately.
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+
+      - name: Restore Turborepo local cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      # Optional: enable Turborepo Remote Cache by adding repo secrets/vars:
+      # env:
+      #   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      #   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve comparison base ref
+        id: base
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_REF="${{ github.event.pull_request.base.sha }}"
+          elif git rev-parse --verify --quiet "origin/${{ github.ref_name }}^{commit}" >/dev/null; then
+            BASE_REF="origin/${{ github.ref_name }}"
+          elif git rev-parse --verify --quiet "origin/develop^{commit}" >/dev/null; then
+            BASE_REF="origin/develop"
+          else
+            BASE_REF="HEAD~1"
+          fi
+          echo "ref=${BASE_REF}" >> "$GITHUB_OUTPUT"
+
+      - name: Detect affected apps
+        shell: bash
+        run: |
+          {
+            echo "### Affected Apps (\`${{ steps.base.outputs.ref }}\`)"
+            echo '```text'
+            node scripts/affected-apps.mjs --base "${{ steps.base.outputs.ref }}" --format pretty
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Run affected typecheck, lint and build
+        env:
+          TURBO_SCM_BASE: ${{ steps.base.outputs.ref }}
+        run: pnpm exec turbo run typecheck lint build --affected
