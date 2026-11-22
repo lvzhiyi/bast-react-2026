@@ -16,14 +16,14 @@
     "zod": "^3.24.2"
   },
   "peerDependencies": {
-    "@tanstack/react-query": "^5.66.0",
-    "react": "^19.0.0"
+    "@tanstack/react-query": "catalog:",
+    "react": "catalog:"
   },
   "devDependencies": {
     "@repo/tsconfig": "workspace:*",
-    "@tanstack/react-query": "^5.66.0",
-    "@types/react": "^19.0.0",
-    "react": "^19.0.0",
-    "typescript": "^5.7.3"
+    "@tanstack/react-query": "catalog:",
+    "@types/react": "catalog:",
+    "react": "catalog:",
+    "typescript": "catalog:"
   }
 }
