@@ -29,7 +29,6 @@ const PLAN_MAP: Record<TenantPlan, { color: string; text: string }> = {
 export function TenantListPage() {
   const { message } = App.useApp();
   const search = tenantsRouteApi.useSearch();
-	console.log('search', search);
   const navigate = tenantsRouteApi.useNavigate();
   const [keywordInput, setKeywordInput] = useState(search.keyword ?? '');
 
