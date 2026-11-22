@@ -1,0 +1,29 @@
+{
+  "name": "@repo/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src"
+  },
+  "dependencies": {
+    "@repo/utils": "workspace:*",
+    "axios": "^1.7.9",
+    "zod": "^3.24.2"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.66.0",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@repo/tsconfig": "workspace:*",
+    "@tanstack/react-query": "^5.66.0",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "typescript": "^5.7.3"
+  }
+}

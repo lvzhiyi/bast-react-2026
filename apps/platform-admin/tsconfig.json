@@ -1,0 +1,10 @@
+{
+  "extends": "@repo/tsconfig/react-app.json",
+  "compilerOptions": {
+    "paths": {
+      "@/app/*": ["./src/app/*"],
+      "@/features/*": ["./src/features/*"]
+    }
+  },
+  "include": ["src"]
+}

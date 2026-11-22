@@ -1,0 +1,23 @@
+{
+  "name": "enterprise-saas-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.1.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:platform": "turbo run dev --filter=@repo/platform-admin",
+    "dev:merchant": "turbo run dev --filter=@repo/merchant-portal",
+    "dev:partner": "turbo run dev --filter=@repo/partner-console",
+    "build": "turbo run build",
+    "build:platform": "turbo run build --filter=@repo/platform-admin...",
+    "build:merchant": "turbo run build --filter=@repo/merchant-portal...",
+    "build:partner": "turbo run build --filter=@repo/partner-console...",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.3"
+  }
+}
