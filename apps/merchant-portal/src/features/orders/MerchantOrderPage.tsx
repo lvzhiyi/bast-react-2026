@@ -1,4 +1,4 @@
-import { CURRENT_TENANT_ID, CURRENT_TENANT_NAME } from '@/app/constants';
+import { CURRENT_TENANT_ID, CURRENT_TENANT_NAME } from '@/shared/constants';
 import { PlusOutlined } from '@ant-design/icons';
 import {
   type OrderItem,

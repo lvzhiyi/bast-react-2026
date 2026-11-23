@@ -1,4 +1,4 @@
-import { CURRENT_TENANT_ID, CURRENT_TENANT_NAME } from '@/app/constants';
+import { CURRENT_TENANT_ID, CURRENT_TENANT_NAME } from '@/shared/constants';
 import { type OrderItem, type OrderStatus, useOrders, useProducts } from '@repo/api';
 import { MetricCard, PageContainer, StatusBadge } from '@repo/ui';
 import { formatCurrency } from '@repo/utils';

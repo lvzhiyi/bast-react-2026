@@ -1,4 +1,4 @@
-import { CURRENT_PARTNER_ID } from '@/app/constants';
+import { CURRENT_PARTNER_ID } from '@/shared/constants';
 import { type TenantItem, type TenantPlan, type TenantStatus, useTenants } from '@repo/api';
 import { PageContainer, StatusBadge } from '@repo/ui';
 import { formatCurrency, formatPercent } from '@repo/utils';

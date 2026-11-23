@@ -1,4 +1,4 @@
-import { CURRENT_TENANT_ID } from '@/app/constants';
+import { CURRENT_TENANT_ID } from '@/shared/constants';
 import { PlusOutlined } from '@ant-design/icons';
 import {
   type CreateProductPayload,

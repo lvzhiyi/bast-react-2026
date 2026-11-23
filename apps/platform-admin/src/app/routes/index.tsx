@@ -45,10 +45,7 @@ const dashboardRoute = createRoute({
       context.queryClient.query(ordersQueryOptions({ page: 1, pageSize: 5 })),
     ]);
   },
-  component: lazyRouteComponent(
-    () => import('@/features/dashboard/PlatformDashboardPage'),
-    'PlatformDashboardPage',
-  ),
+  component: lazyRouteComponent(() => import('@/features/dashboard'), 'PlatformDashboardPage'),
 });
 
 const tenantsRoute = createRoute({
@@ -60,10 +57,7 @@ const tenantsRoute = createRoute({
     status: search.status,
   }),
   loader: ({ context, deps }) => context.queryClient.query(tenantsQueryOptions(deps)),
-  component: lazyRouteComponent(
-    () => import('@/features/tenant-management/TenantListPage'),
-    'TenantListPage',
-  ),
+  component: lazyRouteComponent(() => import('@/features/tenant-management'), 'TenantListPage'),
 });
 
 const ordersRoute = createRoute({
@@ -83,10 +77,7 @@ const ordersRoute = createRoute({
       context.queryClient.query(ordersQueryOptions(deps)),
     ]);
   },
-  component: lazyRouteComponent(
-    () => import('@/features/order-management/OrderListPage'),
-    'OrderListPage',
-  ),
+  component: lazyRouteComponent(() => import('@/features/order-management'), 'OrderListPage'),
 });
 
 const routeTree = rootRoute.addChildren([indexRoute, dashboardRoute, tenantsRoute, ordersRoute]);

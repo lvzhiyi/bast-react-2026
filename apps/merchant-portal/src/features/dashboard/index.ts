@@ -1,0 +1,1 @@
+export { MerchantDashboardPage } from './MerchantDashboardPage';

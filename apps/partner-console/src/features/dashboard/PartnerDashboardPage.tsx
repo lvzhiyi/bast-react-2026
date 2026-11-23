@@ -1,4 +1,4 @@
-import { CURRENT_PARTNER_ID, CURRENT_PARTNER_NAME } from '@/app/constants';
+import { CURRENT_PARTNER_ID, CURRENT_PARTNER_NAME } from '@/shared/constants';
 import { type SettlementItem, type SettlementStatus, useSettlements, useTenants } from '@repo/api';
 import { MetricCard, PageContainer, StatusBadge } from '@repo/ui';
 import { formatCurrency, formatPercent } from '@repo/utils';

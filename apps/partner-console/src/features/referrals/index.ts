@@ -1,0 +1,1 @@
+export { ReferralTenantPage } from './ReferralTenantPage';

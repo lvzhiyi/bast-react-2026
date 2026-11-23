@@ -1,4 +1,4 @@
-import { CURRENT_PARTNER_ID } from '@/app/constants';
+import { CURRENT_PARTNER_ID } from '@/shared/constants';
 import { PlusOutlined } from '@ant-design/icons';
 import {
   type SettlementItem,

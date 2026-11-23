@@ -1,4 +1,4 @@
-import { CURRENT_TENANT_ID } from '@/app/constants';
+import { CURRENT_TENANT_ID } from '@/shared/constants';
 import type { CreateProductPayload } from '@repo/api';
 import { Form, Input, InputNumber, Modal, Select } from 'antd';
 import { useEffect } from 'react';

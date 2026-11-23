@@ -1,5 +1,5 @@
-import { CURRENT_TENANT_ID } from '@/app/constants';
 import { MerchantLayout } from '@/app/layouts/MerchantLayout';
+import { CURRENT_TENANT_ID } from '@/shared/constants';
 import {
   merchantOrderSearchSchema,
   ordersQueryOptions,
@@ -42,10 +42,7 @@ const dashboardRoute = createRoute({
       context.queryClient.ensureQueryData(productsQueryOptions({ tenantId: CURRENT_TENANT_ID })),
     ]);
   },
-  component: lazyRouteComponent(
-    () => import('@/features/dashboard/MerchantDashboardPage'),
-    'MerchantDashboardPage',
-  ),
+  component: lazyRouteComponent(() => import('@/features/dashboard'), 'MerchantDashboardPage'),
 });
 
 const ordersRoute = createRoute({
@@ -62,10 +59,7 @@ const ordersRoute = createRoute({
     context.queryClient.ensureQueryData(
       ordersQueryOptions({ ...deps, tenantId: CURRENT_TENANT_ID }),
     ),
-  component: lazyRouteComponent(
-    () => import('@/features/orders/MerchantOrderPage'),
-    'MerchantOrderPage',
-  ),
+  component: lazyRouteComponent(() => import('@/features/orders'), 'MerchantOrderPage'),
 });
 
 const productsRoute = createRoute({
@@ -80,10 +74,7 @@ const productsRoute = createRoute({
     context.queryClient.ensureQueryData(
       productsQueryOptions({ tenantId: CURRENT_TENANT_ID, ...deps }),
     ),
-  component: lazyRouteComponent(
-    () => import('@/features/products/ProductListPage'),
-    'ProductListPage',
-  ),
+  component: lazyRouteComponent(() => import('@/features/products'), 'ProductListPage'),
 });
 
 const routeTree = rootRoute.addChildren([indexRoute, dashboardRoute, ordersRoute, productsRoute]);

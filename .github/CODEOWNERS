@@ -11,6 +11,7 @@
 /pnpm-lock.yaml @lvzhiyi
 /turbo.json @lvzhiyi
 /biome.json @lvzhiyi
+/eslint.config.mjs @lvzhiyi
 /scripts/ @lvzhiyi
 /.github/ @lvzhiyi
 /.gitlab-ci.yml @lvzhiyi

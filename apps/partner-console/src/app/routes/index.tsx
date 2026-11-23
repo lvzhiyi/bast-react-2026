@@ -1,5 +1,5 @@
-import { CURRENT_PARTNER_ID } from '@/app/constants';
 import { PartnerLayout } from '@/app/layouts/PartnerLayout';
+import { CURRENT_PARTNER_ID } from '@/shared/constants';
 import {
   settlementSearchSchema,
   settlementsQueryOptions,
@@ -42,10 +42,7 @@ const dashboardRoute = createRoute({
       ),
     ]);
   },
-  component: lazyRouteComponent(
-    () => import('@/features/dashboard/PartnerDashboardPage'),
-    'PartnerDashboardPage',
-  ),
+  component: lazyRouteComponent(() => import('@/features/dashboard'), 'PartnerDashboardPage'),
 });
 
 const referralsRoute = createRoute({
@@ -60,10 +57,7 @@ const referralsRoute = createRoute({
     context.queryClient.ensureQueryData(
       tenantsQueryOptions({ partnerId: CURRENT_PARTNER_ID, ...deps }),
     ),
-  component: lazyRouteComponent(
-    () => import('@/features/referrals/ReferralTenantPage'),
-    'ReferralTenantPage',
-  ),
+  component: lazyRouteComponent(() => import('@/features/referrals'), 'ReferralTenantPage'),
 });
 
 const settlementsRoute = createRoute({
@@ -77,10 +71,7 @@ const settlementsRoute = createRoute({
     context.queryClient.ensureQueryData(
       settlementsQueryOptions({ partnerId: CURRENT_PARTNER_ID, ...deps }),
     ),
-  component: lazyRouteComponent(
-    () => import('@/features/settlements/SettlementListPage'),
-    'SettlementListPage',
-  ),
+  component: lazyRouteComponent(() => import('@/features/settlements'), 'SettlementListPage'),
 });
 
 const routeTree = rootRoute.addChildren([
